@@ -1,0 +1,35 @@
+# Ignorowanie plików specyficznych dla systemu operacyjnego
+.DS_Store
+Thumbs.db
+
+# Ignorowanie plików i folderów wirtualnego środowiska Pythona
+venv/
+.env/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Ignorowanie plików konfiguracyjnych i logów
+config.txt
+*.log
+
+# Ignorowanie plików tymczasowych
+*.tmp
+*.swp
+*.swo
+
+# Ignorowanie plików Excela i wynikowych raportów
+*.xlsx
+*.xls
+
+# Ignorowanie plików cache dla narzędzi edytorów i IDE
+.idea/
+.vscode/
+
+# Ignorowanie plików specyficznych dla Windows
+desktop.ini
+
+# Ignorowanie plików związanych z Python Wheels / Pip
+*.whl
+pip-wheel-metadata/
