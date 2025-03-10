@@ -1,5 +1,4 @@
 import os
-import tkinter as tk
 
 import ttkbootstrap as ttk
 from ttkbootstrap import utility
@@ -14,10 +13,10 @@ from pivot_manager import PivotManager
 class SendKw(ttk.Toplevel):
 
     def __init__(self, master):
-        super().__init__(master)
+        super().__init__(master, resizable=(False, False))
 
         self.buttons_lf = ttk.Labelframe(self, text="Konfiguracja", padding=15)
-        self.buttons_lf.pack(fill=X, expand=YES, anchor=N)
+        self.buttons_lf.pack(fill=X, expand=YES, anchor=N, padx=10)
 
         self.create_base_path()
         self.create_email_receiver()
@@ -67,9 +66,9 @@ class SendKw(ttk.Toplevel):
             columns=[0],
             show=HEADINGS
         )
-        self.resultview.pack(fill=BOTH, expand=YES, pady=10)
+        self.resultview.pack(fill=BOTH, expand=YES, pady=10, padx=10)
 
-        self.resultview.heading(0,text="Nazwa", anchor=W)
+        self.resultview.heading(0, text="Nazwa", anchor=W)
 
         self.resultview.column(
             column=0,
@@ -95,7 +94,7 @@ class SendKw(ttk.Toplevel):
         selected_index = self.resultview.selection()
         print(selected_index)
         if not selected_index:
-            Messagebox.show_error( "Nie wybrano pliku", "Błąd",)
+            Messagebox.show_error("Nie wybrano pliku", "Błąd", )
             return
 
         file_name = self.resultview.item(selected_index[0], "values")[0]
