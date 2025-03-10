@@ -2,11 +2,9 @@ import os
 import tkinter as tk
 
 import ttkbootstrap as ttk
-from more_itertools import side_effect
-from ttkbootstrap import OUTLINE
-from ttkbootstrap.dialogs import Messagebox
-from ttkbootstrap.constants import *
 from ttkbootstrap import utility
+from ttkbootstrap.constants import *
+from ttkbootstrap.dialogs import Messagebox
 
 from email_sender import EmailSender
 from file_manager import FileManager
@@ -25,6 +23,7 @@ class SendKw(ttk.Frame):
         self.create_base_path()
         self.create_email_receiver()
         self.create_results_view()
+        self.create_send_btn()
 
     def create_base_path(self):
         path_row = ttk.Frame(self.buttons_lf)
@@ -84,6 +83,64 @@ class SendKw(ttk.Frame):
         for file in file_list:
             self.resultview.insert("", index=END, values=(os.path.basename(file),))
 
+    def create_send_btn(self):
+        self.send_btn = ttk.Button(
+            master=self,
+            text="Wyślij raport",
+            command=self.process_selected_file,
+            bootstyle=(SUCCESS, OUTLINE)
+        )
+        self.send_btn.pack()
+
+    def process_selected_file(self):
+        selected_index = self.resultview.selection()
+        print(selected_index)
+        if not selected_index:
+            Messagebox.show_error("Błąd", "Nie wybrano pliku")
+            return
+
+        file_name = self.resultview.item(selected_index[0], "values")[0]
+        file_path = os.path.join(FileManager.get_base_path(), file_name)
+        print(file_path)
+        df = FileManager.load_excel(file_path)
+
+        if df is None or df.empty:
+            Messagebox.show_error("Błąd", "Plik nie zawiera danych!")
+            return
+
+        pivot_index_countries = ['Kraj']
+        pivot_index_cities = ['Magazyn']
+        pivot_columns = ['Logistyka']
+        pivot_values = 'Order no'
+
+        df = PivotManager.fix_column_name(df, pivot_index_countries[0], pivot_index_cities[0], pivot_columns[0])
+
+        pivot_table_countries = PivotManager.create_pivot_table(df, pivot_index_countries, pivot_columns, pivot_values)
+        if pivot_table_countries is None:
+            Messagebox.show_error("Błąd", "Prawdopodobnie próbujesz wysłać raport z niepoprawnego pliku.")
+            return
+
+        pivot_table_cities = PivotManager.create_pivot_table(df, pivot_index_cities, pivot_columns, pivot_values)
+        print(pivot_table_countries)
+        print(pivot_table_cities)
+
+        html_body = EmailSender.build_html_body(pivot_table_countries, pivot_table_cities)
+
+        file_name = os.path.basename(file_path)[:5]
+        suma = PivotManager.get_suma(pivot_table_cities)
+
+        if suma == 0:
+            Messagebox.show_error("Błąd", "Suma transportów jest niepoprawna. Nie wysłano maila")
+            return
+
+        emailTo = FileManager.get_email_receiver()
+        print(suma)
+        print(file_name)
+        print(emailTo)
+
+        EmailSender.send_email(html_body, file_name, suma, emailTo)
+
+
 class FileEmailApp:
     def __init__(self, root):
         self.root = root
@@ -119,50 +176,6 @@ class FileEmailApp:
             ttk.Button(file_window, text="Wyślij zestawienie transportów",
                        command=lambda: self.process_selected_file(listbox, file_list)).pack(
                 pady=10)
-
-    def process_selected_file(self, listbox, file_list):
-        selected_index = listbox.curselection()
-        if not selected_index:
-            Messagebox.show_error("Błąd", "Nie wybrano pliku")
-            return
-
-        file_path = file_list[selected_index[0]]
-        print(file_path)
-        df = FileManager.load_excel(file_path)
-
-        if df is None or df.empty:
-            Messagebox.show_error("Błąd", "Plik nie zawiera danych!")
-            return
-
-        pivot_index_countries = ['Kraj']
-        pivot_index_cities = ['Magazyn']
-        pivot_columns = ['Logistyka']
-        pivot_values = 'Order no'
-
-        df = PivotManager.fix_column_name(df, pivot_index_countries[0], pivot_index_cities[0], pivot_columns[0])
-
-        pivot_table_countries = PivotManager.create_pivot_table(df, pivot_index_countries, pivot_columns, pivot_values)
-        if pivot_table_countries is None:
-            Messagebox.show_error("Błąd", "Prawdopodobnie próbujesz wysłać raport z niepoprawnego pliku.")
-            return
-
-        pivot_table_cities = PivotManager.create_pivot_table(df, pivot_index_cities, pivot_columns, pivot_values)
-        print(pivot_table_countries)
-        print(pivot_table_cities)
-
-        html_body = EmailSender.build_html_body(pivot_table_countries, pivot_table_cities)
-
-        file_name = os.path.basename(file_path)[:5]
-        suma = PivotManager.get_suma(pivot_table_cities)
-
-        if suma == 0:
-            Messagebox.show_error("Błąd", "Suma transportów jest niepoprawna. Nie wysłano maila")
-            return
-
-        emailTo = FileManager.get_email_receiver()
-        print(emailTo)
-
-        EmailSender.send_email(html_body, file_name, suma, emailTo)
 
 
 if __name__ == '__main__':
