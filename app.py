@@ -1,9 +1,7 @@
-import tkinter as tk
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-
 import os
+import tkinter as tk
 
+import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from email_sender import EmailSender
@@ -31,7 +29,10 @@ class FileEmailApp:
         ttk.Label(file_window, text=FileManager.get_base_path()).pack(pady=10)
         ttk.Button(file_window, text="Ustaw ścieżkę do plików", command=FileManager.set_base_path).pack(pady=10)
 
-        file_list = FileManager.get_files()
+        ttk.Label(file_window, text=FileManager.get_email_receiver()).pack(pady=10)
+        ttk.Button(file_window, text="Ustaw odbiorców adresów", command=FileManager.set_email_receiver).pack(pady=10)
+
+        file_list = FileManager.get_files_list()
 
         listbox = tk.Listbox(file_window, width=80, height=20)
         listbox.pack(pady=10)
@@ -40,7 +41,8 @@ class FileEmailApp:
             listbox.insert(tk.END, os.path.basename(file))
 
         if file_list:
-            ttk.Button(file_window, text="Wyślij zestawienie transportów", command=lambda: self.process_selected_file(listbox, file_list)).pack(
+            ttk.Button(file_window, text="Wyślij zestawienie transportów",
+                       command=lambda: self.process_selected_file(listbox, file_list)).pack(
                 pady=10)
 
     def process_selected_file(self, listbox, file_list):
