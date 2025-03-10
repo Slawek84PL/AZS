@@ -26,6 +26,7 @@ config.txt
 # Ignorowanie plików cache dla narzędzi edytorów i IDE
 .idea/
 .vscode/
+*iml
 
 # Ignorowanie plików specyficznych dla Windows
 desktop.ini
@@ -33,3 +34,21 @@ desktop.ini
 # Ignorowanie plików związanych z Python Wheels / Pip
 *.whl
 pip-wheel-metadata/
+
+# Ignorowanie plików związanych z budową aplikacji
+build/
+dist/
+*.spec
+*.exe
+*.pkg
+*.pyz
+*.toc
+*.zip
+
+# Ignorowanie plików HTML generowanych automatycznie
+*.html
+
+# Ignorowanie bibliotek dodatkowych
+*.egg-info/
+*.egg
+*.pyd
