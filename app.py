@@ -11,11 +11,10 @@ from file_manager import FileManager
 from pivot_manager import PivotManager
 
 
-class SendKw(ttk.Frame):
+class SendKw(ttk.Toplevel):
 
     def __init__(self, master):
-        super().__init__(master, padding=15)
-        self.pack(fill=BOTH, expand=YES)
+        super().__init__(master)
 
         self.buttons_lf = ttk.Labelframe(self, text="Konfiguracja", padding=15)
         self.buttons_lf.pack(fill=X, expand=YES, anchor=N)
@@ -90,13 +89,13 @@ class SendKw(ttk.Frame):
             command=self.process_selected_file,
             bootstyle=(SUCCESS, OUTLINE)
         )
-        self.send_btn.pack()
+        self.send_btn.pack(pady=20, ipadx=10, ipady=5)
 
     def process_selected_file(self):
         selected_index = self.resultview.selection()
         print(selected_index)
         if not selected_index:
-            Messagebox.show_error("Błąd", "Nie wybrano pliku")
+            Messagebox.show_error( "Nie wybrano pliku", "Błąd",)
             return
 
         file_name = self.resultview.item(selected_index[0], "values")[0]
@@ -141,45 +140,22 @@ class SendKw(ttk.Frame):
         EmailSender.send_email(html_body, file_name, suma, emailTo)
 
 
-class FileEmailApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Raporty")
-        self.root.geometry('400x300')
+class MainApp(ttk.Window):
+    def __init__(self):
+        super().__init__("Automatyzacje", "journal")
+        self.geometry("400x200")
 
-        style = ttk.Style("minty")
+        ttk.Button(
+            self,
+            text="Wyślij raport KW Gyal",
+            command=self.open_send_kw,
+            bootstyle=SUCCESS
+        ).pack(pady=50, ipadx=20, ipady=10)
 
-        ttk.Label(root, text="Wybierz rozwiązanie", font=("Arial", 12, "bold")).pack(pady=10)
-        ttk.Button(root, text="Wyślij KW Gyal", command=self.show_file_list).pack(pady=10)
-        # ttk.Button(root, text="Podziel Analizy", command=self.show_file_list).pack(pady=10)
-
-    def show_file_list(self):
-        file_window = ttk.Toplevel(self.root)
-        file_window.title("pliki")
-        file_window.geometry("400x600")
-
-        ttk.Label(file_window, text=FileManager.get_base_path()).pack(pady=10)
-        ttk.Button(file_window, text="Ustaw ścieżkę do plików", command=FileManager.set_base_path).pack(pady=10)
-
-        ttk.Label(file_window, text=FileManager.get_email_receiver()).pack(pady=10)
-        ttk.Button(file_window, text="Ustaw odbiorców adresów", command=FileManager.set_email_receiver).pack(pady=10)
-
-        file_list = FileManager.get_files_list()
-
-        listbox = tk.Listbox(file_window, width=80, height=20)
-        listbox.pack(pady=10)
-
-        for file in file_list:
-            listbox.insert(tk.END, os.path.basename(file))
-
-        if file_list:
-            ttk.Button(file_window, text="Wyślij zestawienie transportów",
-                       command=lambda: self.process_selected_file(listbox, file_list)).pack(
-                pady=10)
+    def open_send_kw(self):
+        SendKw(self)
 
 
 if __name__ == '__main__':
-    app = ttk.Window("Automatyzacje", "journal")
-    # app = FileEmailApp(root)
-    SendKw(app)
+    app = MainApp()
     app.mainloop()
