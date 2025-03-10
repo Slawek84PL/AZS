@@ -24,7 +24,7 @@ class FileEmailApp:
     def show_file_list(self):
         file_window = ttk.Toplevel(self.root)
         file_window.title("pliki")
-        file_window.geometry("400x500")
+        file_window.geometry("400x600")
 
         ttk.Label(file_window, text=FileManager.get_base_path()).pack(pady=10)
         ttk.Button(file_window, text="Ustaw ścieżkę do plików", command=FileManager.set_base_path).pack(pady=10)
@@ -84,7 +84,10 @@ class FileEmailApp:
             Messagebox.show_error("Błąd", "Suma transportów jest niepoprawna. Nie wysłano maila")
             return
 
-        EmailSender.send_email(html_body, file_name, suma)
+        emailTo = FileManager.get_email_receiver()
+        print(emailTo)
+
+        EmailSender.send_email(html_body, file_name, suma, emailTo)
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ from premailer import transform
 class EmailSender:
 
     @staticmethod
-    def send_email(html_body, excel_file, suma):
+    def send_email(html_body, excel_file, suma, emailTo):
         try:
             outlook = win32com.client.Dispatch("Outlook.Application")
 
@@ -15,7 +15,7 @@ class EmailSender:
             mail.Display()
             default_signature = mail.HTMLBody if mail.HTMLBody else ""
 
-            mail.To = ''
+            mail.To = emailTo if emailTo else ""
             mail.Subject = f"{excel_file} GYAL. Suma ładunków {suma}"
             mail.HTMLBody = html_body + default_signature
 
@@ -25,7 +25,8 @@ class EmailSender:
 
     @staticmethod
     def build_html_body(pivot_table_countries, pivot_table_cities):
-        html_pivot_countries = pivot_table_countries.to_html(classes="excel") if pivot_table_countries is not None else ""
+        html_pivot_countries = pivot_table_countries.to_html(
+            classes="excel") if pivot_table_countries is not None else ""
         html_pivot_cities = pivot_table_cities.to_html(classes="excel") if pivot_table_cities is not None else ""
 
         style = """

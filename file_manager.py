@@ -1,6 +1,7 @@
 import glob
 import os.path
 from tkinter import filedialog, messagebox, simpledialog
+
 import pandas as pd
 
 
@@ -58,7 +59,7 @@ class FileManager:
     @staticmethod
     def set_email_receiver():
         emails = simpledialog.askstring("Odbiorcy e-mail",
-                                        "Podaj adresy e-mail oddzielone przecinkiem:",
+                                        "Podaj adresy e-mail oddzielone średnikiem:",
                                         initialvalue=FileManager.get_email_receiver() or "")
         if emails:
             FileManager.set_config(FileManager.EMAIL_RECEIVERS, emails)
