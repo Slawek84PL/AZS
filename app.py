@@ -2,12 +2,87 @@ import os
 import tkinter as tk
 
 import ttkbootstrap as ttk
+from more_itertools import side_effect
+from ttkbootstrap import OUTLINE
 from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.constants import *
+from ttkbootstrap import utility
 
 from email_sender import EmailSender
 from file_manager import FileManager
 from pivot_manager import PivotManager
 
+
+class SendKw(ttk.Frame):
+
+    def __init__(self, master):
+        super().__init__(master, padding=15)
+        self.pack(fill=BOTH, expand=YES)
+
+        self.buttons_lf = ttk.Labelframe(self, text="Konfiguracja", padding=15)
+        self.buttons_lf.pack(fill=X, expand=YES, anchor=N)
+
+        self.create_base_path()
+        self.create_email_receiver()
+        self.create_results_view()
+
+    def create_base_path(self):
+        path_row = ttk.Frame(self.buttons_lf)
+        path_row.pack(fill=X, expand=YES, pady=5)
+        path_lbl = ttk.Label(path_row, text="Folder KW", width=15)
+        path_lbl.pack(side=LEFT, padx=(15, 0))
+        base_path = FileManager.get_base_path()
+        print(base_path)
+        path_ent = ttk.Label(path_row, text=base_path)
+        path_ent.pack(side=LEFT, fill=X, expand=YES, padx=1)
+        search_btn = ttk.Button(
+            master=path_row,
+            text="Zmień",
+            command=FileManager.set_base_path,
+            bootstyle=OUTLINE,
+            width=8
+        )
+        search_btn.pack(side=LEFT, padx=5)
+
+    def create_email_receiver(self):
+        path_row = ttk.Frame(self.buttons_lf)
+        path_row.pack(fill=X, expand=YES, pady=5)
+        path_lbl = ttk.Label(path_row, text="Odbiorcy", width=15)
+        path_lbl.pack(side=LEFT, padx=(15, 0))
+        base_path = FileManager.get_email_receiver()
+        print(base_path)
+        path_ent = ttk.Label(path_row, text=base_path)
+        path_ent.pack(side=LEFT, fill=X, expand=YES, padx=1)
+        search_btn = ttk.Button(
+            master=path_row,
+            text="Zmień",
+            command=FileManager.set_email_receiver,
+            bootstyle=OUTLINE,
+            width=8
+        )
+        search_btn.pack(side=LEFT, padx=5)
+
+    def create_results_view(self):
+        self.resultview = ttk.Treeview(
+            master=self,
+            bootstyle=INFO,
+            columns=[0],
+            show=HEADINGS
+        )
+        self.resultview.pack(fill=BOTH, expand=YES, pady=10)
+
+        self.resultview.heading(0,text="Nazwa", anchor=W)
+
+        self.resultview.column(
+            column=0,
+            anchor=W,
+            width=utility.scale_size(self, 550),
+            stretch=False
+        )
+
+        file_list = FileManager.get_files_list()
+        for file in file_list:
+            self.resultview.insert("", index=END, values=(os.path.basename(file),))
 
 class FileEmailApp:
     def __init__(self, root):
@@ -91,6 +166,7 @@ class FileEmailApp:
 
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    app = FileEmailApp(root)
-    root.mainloop()
+    app = ttk.Window("Automatyzacje", "journal")
+    # app = FileEmailApp(root)
+    SendKw(app)
+    app.mainloop()
