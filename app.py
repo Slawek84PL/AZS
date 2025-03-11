@@ -1,7 +1,8 @@
 import os
-import tkinter as tk
 
 import ttkbootstrap as ttk
+from ttkbootstrap import utility
+from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
 
 from email_sender import EmailSender
@@ -9,49 +10,95 @@ from file_manager import FileManager
 from pivot_manager import PivotManager
 
 
-class FileEmailApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Raporty")
-        self.root.geometry('400x300')
+class SendKw(ttk.Toplevel):
 
-        style = ttk.Style("minty")
+    def __init__(self, master):
+        super().__init__(master, resizable=(False, False))
 
-        ttk.Label(root, text="Wybierz rozwiązanie", font=("Arial", 12, "bold")).pack(pady=10)
-        ttk.Button(root, text="Wyślij KW Gyal", command=self.show_file_list).pack(pady=10)
-        # ttk.Button(root, text="Podziel Analizy", command=self.show_file_list).pack(pady=10)
+        self.buttons_lf = ttk.Labelframe(self, text="Konfiguracja", padding=15)
+        self.buttons_lf.pack(fill=X, expand=YES, anchor=N, padx=10)
 
-    def show_file_list(self):
-        file_window = ttk.Toplevel(self.root)
-        file_window.title("pliki")
-        file_window.geometry("400x600")
+        self.create_base_path()
+        self.create_email_receiver()
+        self.create_results_view()
+        self.create_send_btn()
 
-        ttk.Label(file_window, text=FileManager.get_base_path()).pack(pady=10)
-        ttk.Button(file_window, text="Ustaw ścieżkę do plików", command=FileManager.set_base_path).pack(pady=10)
+    def create_base_path(self):
+        path_row = ttk.Frame(self.buttons_lf)
+        path_row.pack(fill=X, expand=YES, pady=5)
+        path_lbl = ttk.Label(path_row, text="Folder KW", width=15)
+        path_lbl.pack(side=LEFT, padx=(15, 0))
+        base_path = FileManager.get_base_path()
+        print(base_path)
+        path_ent = ttk.Label(path_row, text=base_path)
+        path_ent.pack(side=LEFT, fill=X, expand=YES, padx=1)
+        search_btn = ttk.Button(
+            master=path_row,
+            text="Zmień",
+            command=FileManager.set_base_path,
+            bootstyle=OUTLINE,
+            width=8
+        )
+        search_btn.pack(side=LEFT, padx=5)
 
-        ttk.Label(file_window, text=FileManager.get_email_receiver()).pack(pady=10)
-        ttk.Button(file_window, text="Ustaw odbiorców adresów", command=FileManager.set_email_receiver).pack(pady=10)
+    def create_email_receiver(self):
+        path_row = ttk.Frame(self.buttons_lf)
+        path_row.pack(fill=X, expand=YES, pady=5)
+        path_lbl = ttk.Label(path_row, text="Odbiorcy", width=15)
+        path_lbl.pack(side=LEFT, padx=(15, 0))
+        base_path = FileManager.get_email_receiver()
+        print(base_path)
+        path_ent = ttk.Label(path_row, text=base_path)
+        path_ent.pack(side=LEFT, fill=X, expand=YES, padx=1)
+        search_btn = ttk.Button(
+            master=path_row,
+            text="Zmień",
+            command=FileManager.set_email_receiver,
+            bootstyle=OUTLINE,
+            width=8
+        )
+        search_btn.pack(side=LEFT, padx=5)
+
+    def create_results_view(self):
+        self.resultview = ttk.Treeview(
+            master=self,
+            bootstyle=INFO,
+            columns=[0],
+            show=HEADINGS
+        )
+        self.resultview.pack(fill=BOTH, expand=YES, pady=10, padx=10)
+
+        self.resultview.heading(0, text="Nazwa", anchor=W)
+
+        self.resultview.column(
+            column=0,
+            anchor=W,
+            width=utility.scale_size(self, 550),
+            stretch=False
+        )
 
         file_list = FileManager.get_files_list()
-
-        listbox = tk.Listbox(file_window, width=80, height=20)
-        listbox.pack(pady=10)
-
         for file in file_list:
-            listbox.insert(tk.END, os.path.basename(file))
+            self.resultview.insert("", index=END, values=(os.path.basename(file),))
 
-        if file_list:
-            ttk.Button(file_window, text="Wyślij zestawienie transportów",
-                       command=lambda: self.process_selected_file(listbox, file_list)).pack(
-                pady=10)
+    def create_send_btn(self):
+        self.send_btn = ttk.Button(
+            master=self,
+            text="Wyślij raport",
+            command=self.process_selected_file,
+            bootstyle=(SUCCESS, OUTLINE)
+        )
+        self.send_btn.pack(pady=20, ipadx=10, ipady=5)
 
-    def process_selected_file(self, listbox, file_list):
-        selected_index = listbox.curselection()
+    def process_selected_file(self):
+        selected_index = self.resultview.selection()
+        print(selected_index)
         if not selected_index:
-            Messagebox.show_error("Błąd", "Nie wybrano pliku")
+            Messagebox.show_error("Nie wybrano pliku", "Błąd", )
             return
 
-        file_path = file_list[selected_index[0]]
+        file_name = self.resultview.item(selected_index[0], "values")[0]
+        file_path = os.path.join(FileManager.get_base_path(), file_name)
         print(file_path)
         df = FileManager.load_excel(file_path)
 
@@ -85,12 +132,29 @@ class FileEmailApp:
             return
 
         emailTo = FileManager.get_email_receiver()
+        print(suma)
+        print(file_name)
         print(emailTo)
 
         EmailSender.send_email(html_body, file_name, suma, emailTo)
 
 
+class MainApp(ttk.Window):
+    def __init__(self):
+        super().__init__("Automatyzacje", "journal")
+        self.geometry("400x200")
+
+        ttk.Button(
+            self,
+            text="Wyślij raport KW Gyal",
+            command=self.open_send_kw,
+            bootstyle=SUCCESS
+        ).pack(pady=50, ipadx=20, ipady=10)
+
+    def open_send_kw(self):
+        SendKw(self)
+
+
 if __name__ == '__main__':
-    root = tk.Tk()
-    app = FileEmailApp(root)
-    root.mainloop()
+    app = MainApp()
+    app.mainloop()
