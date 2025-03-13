@@ -9,6 +9,7 @@ class FileManager:
     CONFIG_FILE = "config.txt"
     EMAIL_RECEIVERS = "email_receivers"
     BASE_PATH_KW = "base_path_kw"
+    BASE_PATH_MERGE = "base_path_merge"
 
     @staticmethod
     def get_config():
@@ -29,20 +30,29 @@ class FileManager:
                 file.write(f"{k}={v}\n")
 
     @staticmethod
-    def set_base_path():
+    def set_base_path_kw():
         path = filedialog.askdirectory()
         if path:
             FileManager.set_config(FileManager.BASE_PATH_KW, path)
             messagebox.showinfo("Sukces", "Ścieżka zapisana")
 
     @staticmethod
-    def get_base_path():
+    def get_base_path_kw():
         return FileManager.get_config().get(FileManager.BASE_PATH_KW)
 
     @staticmethod
-    def get_files_list():
-        base_path = FileManager.get_base_path()
-        print(base_path)
+    def set_base_path_merge():
+        path = filedialog.askdirectory()
+        if path:
+            FileManager.set_config(FileManager.BASE_PATH_MERGE, path)
+            messagebox.showinfo("Sukces", "Ścieżka zapisana")
+
+    @staticmethod
+    def get_base_path_merge():
+        return FileManager.get_config().get(FileManager.BASE_PATH_MERGE)
+
+    @staticmethod
+    def get_files_list(base_path):
         if not base_path or not os.path.exists(base_path):
             messagebox.showerror("Błąd", "Nie ustawiono poprawnej ściezki bazowej")
             return []
