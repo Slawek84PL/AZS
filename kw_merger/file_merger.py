@@ -26,13 +26,13 @@ class FileMerger():
 
     @staticmethod
     def proceed_df(first_df, second_df, second_file_path):
-        first_df = FileMerger.remove_header(first_df)
+        # first_df = FileMerger.remove_header(first_df)
 
         merged_df = pd.concat([second_df, first_df], ignore_index=True)
 
         merged_df = FileMerger.replace_data(merged_df)
 
-        merged_df = FileMerger.remove_header(merged_df)
+        # merged_df = FileMerger.remove_header(merged_df)
 
         FileMerger.update_file(merged_df, second_file_path)
 
@@ -90,10 +90,10 @@ class FileMerger():
             Messagebox.show_error(f"Błąd podczas kopiowania arkusza: {e}", "Błąd")
             return None
 
-    @staticmethod
-    def remove_header(df):
-        df = df.iloc[0:]
-        return df
+    # @staticmethod
+    # def remove_header(df):
+    #     df = df.iloc[0:]
+    #     return df
 
     @staticmethod
     def replace_data(merged_df):
