@@ -1,10 +1,10 @@
 import os.path
+
 import pandas as pd
 import win32com
-from openpyxl import load_workbook
+from ttkbootstrap.dialogs import Messagebox
 
 from file_manager import FileManager
-from ttkbootstrap.dialogs import Messagebox
 
 
 class FileMerger():
@@ -38,25 +38,27 @@ class FileMerger():
 
     @staticmethod
     def update_file(merged_df, second_file_path):
-        wb = load_workbook(second_file_path)
-        ws = wb["ZAM"]
 
-        ws.delete_rows(2, ws.max_row - 1)
+        excel = win32com.client.Dispatch("Excel.Application")
+        excel.Visible = True
+
+        workbook = excel.Workbooks.Open(second_file_path)
+
+        sheet = workbook.Sheets(1)
+        sheet.Range("A2:A" + str(sheet.Rows.Count)).EntireRow.Delete()
 
         for r_idx, row in enumerate(merged_df.values, start=2):
             for c_idx, value in enumerate(row, start=1):
-                ws.cell(row=r_idx, column=c_idx, value=value)
+                sheet.Cells(r_idx, c_idx).Value = value
 
-        FileMerger.run_vba_macro(second_file_path)
+        FileMerger.run_vba_macro(workbook)
+
+        workbook.Close(SaveChanges=True)
+        excel.Quit()
 
     @staticmethod
-    def run_vba_macro(second_file_path):
+    def run_vba_macro(workbook):
         macro_name = "ListaZaladunkowa"
-
-        excel = win32com.client.Dispatch("Excel.Application")
-        excel.Visible = False
-
-        workbook = excel.Workbooks.Open(second_file_path)
 
         try:
             workbook.Application.Run(f"'{workbook.Name}'!{macro_name}")
@@ -64,9 +66,6 @@ class FileMerger():
 
         except Exception as e:
             Messagebox.show_error(f"Błąd podczas wykonywania makra: {e}", "Błąd")
-
-        workbook.Close(SaveChanges=True)
-        excel.Quit()
 
     @staticmethod
     def copy_sheet_to_new_workbook(workbook, sheet_name):
@@ -78,7 +77,11 @@ class FileMerger():
             sheet.Copy(Before=new_workbook.Sheets(1))
 
             new_workbook.SaveAs(output_file)
-            print(f"Arkusz {sheet_name} skopiowany do {output_file}")
+            Messagebox.show_info(f"Arkusz {sheet_name} skopiowany do {output_file}", "Info")
+
+            for ws in new_workbook.Sheets:
+                if ws.Name != sheet_name:
+                    ws.Delete()
 
             new_workbook.Close(SaveChanges=True)
             return output_file
