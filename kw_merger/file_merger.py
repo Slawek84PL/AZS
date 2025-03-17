@@ -42,7 +42,7 @@ class FileMerger():
         excel = win32com.client.Dispatch("Excel.Application")
         excel.Visible = True
 
-        workbook = excel.Workbooks.Open(second_file_path)
+        workbook = excel.Workbooks.Open(second_file_path, ReadOnly=True)
 
         sheet = workbook.Sheets(1)
         sheet.Range("A2:A" + str(sheet.Rows.Count)).EntireRow.Delete()
@@ -53,7 +53,7 @@ class FileMerger():
 
         FileMerger.run_vba_macro(workbook)
 
-        workbook.Close(SaveChanges=True)
+        workbook.Close(SaveChanges=False)
         excel.Quit()
 
     @staticmethod
@@ -76,7 +76,6 @@ class FileMerger():
             new_workbook = workbook.Application.Workbooks.Add()
             sheet.Copy(Before=new_workbook.Sheets(1))
 
-            new_workbook.SaveAs(output_file)
             Messagebox.show_info(f"Arkusz {sheet_name} skopiowany do {output_file}", "Info")
 
             for ws in new_workbook.Sheets:
