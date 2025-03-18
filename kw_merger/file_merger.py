@@ -1,7 +1,6 @@
 import os.path
 
 import pandas as pd
-import win32com
 from ttkbootstrap.dialogs import Messagebox
 
 from file_manager import FileManager
@@ -22,77 +21,20 @@ class FileMerger():
             Messagebox.show_error("Jeden z wybranych plików nie posiada zawartości")
             return
 
-        FileMerger.proceed_df(first_df, second_df, second_file_path)
+        FileMerger.proceed_df(first_df, second_df, first_file_name)
 
     @staticmethod
-    def proceed_df(first_df, second_df, second_file_path):
-        # first_df = FileMerger.remove_header(first_df)
+    def proceed_df(first_df, second_df, first_file_name):
 
         merged_df = pd.concat([second_df, first_df], ignore_index=True)
 
         merged_df = FileMerger.replace_data(merged_df)
 
-        # merged_df = FileMerger.remove_header(merged_df)
+        report_df = FileMerger.transform_and_group_orders(merged_df)
 
-        FileMerger.update_file(merged_df, second_file_path)
+        FileManager.save_excel_file(report_df, first_file_name[:5] + " LL")
 
-    @staticmethod
-    def update_file(merged_df, second_file_path):
 
-        excel = win32com.client.Dispatch("Excel.Application")
-        excel.Visible = True
-
-        workbook = excel.Workbooks.Open(second_file_path, ReadOnly=True)
-
-        sheet = workbook.Sheets(1)
-        sheet.Range("A2:A" + str(sheet.Rows.Count)).EntireRow.Delete()
-
-        for r_idx, row in enumerate(merged_df.values, start=2):
-            for c_idx, value in enumerate(row, start=1):
-                sheet.Cells(r_idx, c_idx).Value = value
-
-        FileMerger.run_vba_macro(workbook)
-
-        workbook.Close(SaveChanges=False)
-        excel.Quit()
-
-    @staticmethod
-    def run_vba_macro(workbook):
-        macro_name = "ListaZaladunkowa"
-
-        try:
-            workbook.Application.Run(f"'{workbook.Name}'!{macro_name}")
-            FileMerger.copy_sheet_to_new_workbook(workbook, "LoadingList")
-
-        except Exception as e:
-            Messagebox.show_error(f"Błąd podczas wykonywania makra: {e}", "Błąd")
-
-    @staticmethod
-    def copy_sheet_to_new_workbook(workbook, sheet_name):
-        output_file = os.path.join(FileManager.get_base_path_merge(), "ll.xlsx")
-
-        try:
-            sheet = workbook.Sheets(sheet_name)
-            new_workbook = workbook.Application.Workbooks.Add()
-            sheet.Copy(Before=new_workbook.Sheets(1))
-
-            Messagebox.show_info(f"Arkusz {sheet_name} skopiowany do {output_file}", "Info")
-
-            for ws in new_workbook.Sheets:
-                if ws.Name != sheet_name:
-                    ws.Delete()
-
-            new_workbook.Close(SaveChanges=True)
-            return output_file
-
-        except Exception as e:
-            Messagebox.show_error(f"Błąd podczas kopiowania arkusza: {e}", "Błąd")
-            return None
-
-    # @staticmethod
-    # def remove_header(df):
-    #     df = df.iloc[0:]
-    #     return df
 
     @staticmethod
     def replace_data(merged_df):
@@ -101,3 +43,58 @@ class FileMerger():
         merged_df[column_name] = merged_df[column_name].str.replace("GYD", "GYA")
 
         return merged_df
+
+    @staticmethod
+    def transform_and_group_orders(df):
+
+        country_map = {
+            "SK": 1,
+            "CZ": 2,
+            "PL": 3,
+            "HU": 4,
+            "RS": 5,
+            "BG": 6,
+            # Dodasz resztę kodów
+        }
+
+        result_rows = []
+
+        for order, group in df.groupby("Rendelési szám"):
+            main_location = group[group["Infó"] == "HAVI"]
+            main_quantity = main_location["Raklapok \nszáma"].sum() if not main_location.empty else 0
+
+            additional_locations = group[group["Infó"] != "HAVI"]
+
+            if not additional_locations.empty:
+                grouped_additional = (
+                    additional_locations.groupby("Infó", as_index=False)["Raklapok \nszáma"]
+                    .sum()
+                )
+
+                additional_text = " ".join(
+                    f"{row['Infó']}({row['Raklapok \nszáma']}pal)"
+                    for _, row in grouped_additional.iterrows()
+                )
+            else:
+                additional_text = ""
+
+            # Transformacje kolumn
+            group["B"] = group["A címzett \nraktára"]
+            group["A"] = group["A fogadó \nországa"].map(country_map).astype(str) + " " + group["A fogadó \nországa"]
+
+            result_rows.append([
+                group["A"].iloc[0],
+                group["B"].iloc[0],
+                "",
+                "",
+                main_quantity,
+                additional_text,
+                # additional_locations,
+                order,
+            ])
+
+        result_df = pd.DataFrame(result_rows, columns=[
+            "A fogadó ", "A címzett","dod1", "dod2", "HAVI", "Comment", "Order no",
+        ])
+
+        return result_df
