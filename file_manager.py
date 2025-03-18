@@ -84,3 +84,12 @@ class FileManager:
         except Exception as e:
             Messagebox.show_error(f"Błąd podczas wczytywania pliku: {e}", "Błąd")
             return None
+
+    @staticmethod
+    def save_excel_file(merged_df, output_file):
+        output_file = os.path.join(FileManager.get_base_path_merge(), output_file)
+        print(output_file)
+
+        merged_df.to_excel(output_file, index=False, engine="openpyxl")
+
+        Messagebox.show_info(f"Plik zapisano jako {output_file}", "Sukces")
