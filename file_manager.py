@@ -3,6 +3,7 @@ import os.path
 from tkinter import filedialog, messagebox, simpledialog
 
 import pandas as pd
+from ttkbootstrap.dialogs import Messagebox
 
 
 class FileManager:
@@ -34,7 +35,7 @@ class FileManager:
         path = filedialog.askdirectory()
         if path:
             FileManager.set_config(FileManager.BASE_PATH_KW, path)
-            messagebox.showinfo("Sukces", "Ścieżka zapisana")
+            Messagebox.show_info("Ścieżka zapisana", "Sukces")
 
     @staticmethod
     def get_base_path_kw():
@@ -45,7 +46,7 @@ class FileManager:
         path = filedialog.askdirectory()
         if path:
             FileManager.set_config(FileManager.BASE_PATH_MERGE, path)
-            messagebox.showinfo("Sukces", "Ścieżka zapisana")
+            Messagebox.show_info("Ścieżka zapisana", "Sukces")
 
     @staticmethod
     def get_base_path_merge():
@@ -54,7 +55,7 @@ class FileManager:
     @staticmethod
     def get_files_list(base_path):
         if not base_path or not os.path.exists(base_path):
-            messagebox.showerror("Błąd", "Nie ustawiono poprawnej ściezki bazowej")
+            Messagebox.show_error( "Nie ustawiono poprawnej ściezki bazowej", "Błąd",)
             return []
 
         files = glob.glob(os.path.join(base_path, "*"))
@@ -73,7 +74,7 @@ class FileManager:
                                         initialvalue=FileManager.get_email_receiver() or "")
         if emails:
             FileManager.set_config(FileManager.EMAIL_RECEIVERS, emails)
-            messagebox.showinfo("Sukces", "Adresy zapisane")
+            Messagebox.show_info("Adresy zapisane", "Sukces")
 
     @staticmethod
     def load_excel(file_path):
@@ -81,5 +82,5 @@ class FileManager:
             df = pd.read_excel(file_path, engine="openpyxl")
             return df
         except Exception as e:
-            print(f"Błąd podczas wczytywania pliku: {e}")
+            Messagebox.show_error(f"Błąd podczas wczytywania pliku: {e}", "Błąd")
             return None
