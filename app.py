@@ -99,7 +99,6 @@ class SendKw(ttk.Toplevel):
 
         file_name = self.resultview.item(selected_index[0], "values")[0]
         file_path = os.path.join(FileManager.get_base_path_kw(), file_name)
-        # print(file_path)
         df = FileManager.load_excel(file_path)
 
         if df is None or df.empty:

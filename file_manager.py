@@ -1,7 +1,8 @@
 import glob
 import os.path
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import filedialog, simpledialog
 
+import openpyxl
 import pandas as pd
 from ttkbootstrap.dialogs import Messagebox
 
@@ -55,7 +56,7 @@ class FileManager:
     @staticmethod
     def get_files_list(base_path):
         if not base_path or not os.path.exists(base_path):
-            Messagebox.show_error( "Nie ustawiono poprawnej ściezki bazowej", "Błąd",)
+            Messagebox.show_error("Nie ustawiono poprawnej ściezki bazowej", "Błąd", )
             return []
 
         files = glob.glob(os.path.join(base_path, "*"))
@@ -86,10 +87,16 @@ class FileManager:
             return None
 
     @staticmethod
-    def save_excel_file(merged_df, output_file):
-        output_file = os.path.join(FileManager.get_base_path_merge(), output_file)
+    def save_excel_file(merged_df, file_path, output_file):
+        output_file = os.path.join(file_path, output_file)
         print(output_file)
 
         merged_df.to_excel(output_file, index=False, engine="openpyxl")
 
         Messagebox.show_info(f"Plik zapisano jako {output_file}", "Sukces")
+        return output_file
+
+    @staticmethod
+    def open_excel_file(file_path):
+        wb = openpyxl.load_workbook(file_path)
+        return wb
