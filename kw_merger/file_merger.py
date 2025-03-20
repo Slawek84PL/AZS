@@ -2,7 +2,7 @@ import os.path
 from datetime import datetime
 
 import pandas as pd
-from openpyxl.styles import Font, Border, Side
+from openpyxl.styles import Font, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from ttkbootstrap.dialogs import Messagebox
 
@@ -140,10 +140,11 @@ class FileMerger():
                              top=Side(style='thin'), bottom=Side(style='thin'))
 
         col_max_length = [len(header) for header in headers]
-
         ws_new.append(headers)
+
         for cell in ws_new[1]:
-            cell.font = Font(bold=True)
+            cell.font = Font(name="Arial", size = 10, bold=True)
+            cell.alignment = Alignment(horizontal="center", vertical="center")
             cell.border = thin_border
 
         for row_data in data:
@@ -154,7 +155,7 @@ class FileMerger():
             font_color = font_colors.get(order_value, "000000")
 
             for idx, cell in enumerate(row):
-                cell.font = Font(color=font_color)
+                cell.font = Font(name="Arial", size=10, color=font_color)
                 cell.border = thin_border
 
                 try:
