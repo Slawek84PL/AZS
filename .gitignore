@@ -21,6 +21,7 @@ config.txt
 
 # Ignorowanie plików Excela i wynikowych raportów
 *.xlsx
+*.xlsm
 *.xls
 
 # Ignorowanie plików cache dla narzędzi edytorów i IDE

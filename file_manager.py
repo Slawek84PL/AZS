@@ -1,14 +1,17 @@
 import glob
 import os.path
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import filedialog, simpledialog
 
+import openpyxl
 import pandas as pd
+from ttkbootstrap.dialogs import Messagebox
 
 
 class FileManager:
     CONFIG_FILE = "config.txt"
     EMAIL_RECEIVERS = "email_receivers"
     BASE_PATH_KW = "base_path_kw"
+    BASE_PATH_MERGE = "base_path_merge"
 
     @staticmethod
     def get_config():
@@ -29,22 +32,31 @@ class FileManager:
                 file.write(f"{k}={v}\n")
 
     @staticmethod
-    def set_base_path():
+    def set_base_path_kw():
         path = filedialog.askdirectory()
         if path:
             FileManager.set_config(FileManager.BASE_PATH_KW, path)
-            messagebox.showinfo("Sukces", "Ścieżka zapisana")
+            Messagebox.show_info("Ścieżka zapisana", "Sukces")
 
     @staticmethod
-    def get_base_path():
+    def get_base_path_kw():
         return FileManager.get_config().get(FileManager.BASE_PATH_KW)
 
     @staticmethod
-    def get_files_list():
-        base_path = FileManager.get_base_path()
-        print(base_path)
+    def set_base_path_merge():
+        path = filedialog.askdirectory()
+        if path:
+            FileManager.set_config(FileManager.BASE_PATH_MERGE, path)
+            Messagebox.show_info("Ścieżka zapisana", "Sukces")
+
+    @staticmethod
+    def get_base_path_merge():
+        return FileManager.get_config().get(FileManager.BASE_PATH_MERGE)
+
+    @staticmethod
+    def get_files_list(base_path):
         if not base_path or not os.path.exists(base_path):
-            messagebox.showerror("Błąd", "Nie ustawiono poprawnej ściezki bazowej")
+            Messagebox.show_error("Nie ustawiono poprawnej ściezki bazowej", "Błąd", )
             return []
 
         files = glob.glob(os.path.join(base_path, "*"))
@@ -63,7 +75,7 @@ class FileManager:
                                         initialvalue=FileManager.get_email_receiver() or "")
         if emails:
             FileManager.set_config(FileManager.EMAIL_RECEIVERS, emails)
-            messagebox.showinfo("Sukces", "Adresy zapisane")
+            Messagebox.show_info("Adresy zapisane", "Sukces")
 
     @staticmethod
     def load_excel(file_path):
@@ -71,5 +83,20 @@ class FileManager:
             df = pd.read_excel(file_path, engine="openpyxl")
             return df
         except Exception as e:
-            print(f"Błąd podczas wczytywania pliku: {e}")
+            Messagebox.show_error(f"Błąd podczas wczytywania pliku: {e}", "Błąd")
             return None
+
+    @staticmethod
+    def save_excel_file(merged_df, file_path, output_file):
+        output_file = os.path.join(file_path, output_file)
+        print(output_file)
+
+        merged_df.to_excel(output_file, index=False, engine="openpyxl")
+
+        Messagebox.show_info(f"Plik zapisano jako {output_file}", "Sukces")
+        return output_file
+
+    @staticmethod
+    def open_excel_file(file_path):
+        wb = openpyxl.load_workbook(file_path)
+        return wb

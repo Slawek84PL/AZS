@@ -7,6 +7,7 @@ from ttkbootstrap.dialogs import Messagebox
 
 from email_sender import EmailSender
 from file_manager import FileManager
+from kw_merger.view import ViewMerger
 from pivot_manager import PivotManager
 
 
@@ -15,6 +16,7 @@ class SendKw(ttk.Toplevel):
     def __init__(self, master):
         super().__init__(master, resizable=(False, False))
 
+        self.title("Wyślij raport KW")
         self.buttons_lf = ttk.Labelframe(self, text="Konfiguracja", padding=15)
         self.buttons_lf.pack(fill=X, expand=YES, anchor=N, padx=10)
 
@@ -28,14 +30,13 @@ class SendKw(ttk.Toplevel):
         path_row.pack(fill=X, expand=YES, pady=5)
         path_lbl = ttk.Label(path_row, text="Folder KW", width=15)
         path_lbl.pack(side=LEFT, padx=(15, 0))
-        base_path = FileManager.get_base_path()
-        print(base_path)
+        base_path = FileManager.get_base_path_kw()
         path_ent = ttk.Label(path_row, text=base_path)
         path_ent.pack(side=LEFT, fill=X, expand=YES, padx=1)
         search_btn = ttk.Button(
             master=path_row,
             text="Zmień",
-            command=FileManager.set_base_path,
+            command=FileManager.set_base_path_kw,
             bootstyle=OUTLINE,
             width=8
         )
@@ -47,7 +48,6 @@ class SendKw(ttk.Toplevel):
         path_lbl = ttk.Label(path_row, text="Odbiorcy", width=15)
         path_lbl.pack(side=LEFT, padx=(15, 0))
         base_path = FileManager.get_email_receiver()
-        print(base_path)
         path_ent = ttk.Label(path_row, text=base_path)
         path_ent.pack(side=LEFT, fill=X, expand=YES, padx=1)
         search_btn = ttk.Button(
@@ -77,7 +77,7 @@ class SendKw(ttk.Toplevel):
             stretch=False
         )
 
-        file_list = FileManager.get_files_list()
+        file_list = FileManager.get_files_list(FileManager.get_base_path_kw())
         for file in file_list:
             self.resultview.insert("", index=END, values=(os.path.basename(file),))
 
@@ -98,8 +98,7 @@ class SendKw(ttk.Toplevel):
             return
 
         file_name = self.resultview.item(selected_index[0], "values")[0]
-        file_path = os.path.join(FileManager.get_base_path(), file_name)
-        print(file_path)
+        file_path = os.path.join(FileManager.get_base_path_kw(), file_name)
         df = FileManager.load_excel(file_path)
 
         if df is None or df.empty:
@@ -142,17 +141,27 @@ class SendKw(ttk.Toplevel):
 class MainApp(ttk.Window):
     def __init__(self):
         super().__init__("Automatyzacje", "journal")
-        self.geometry("400x200")
+        self.geometry("400x400")
 
         ttk.Button(
             self,
             text="Wyślij raport KW Gyal",
             command=self.open_send_kw,
             bootstyle=SUCCESS
-        ).pack(pady=50, ipadx=20, ipady=10)
+        ).pack(pady=50, ipadx=10, ipady=10)
+
+        ttk.Button(
+            self,
+            text="Scal pliki KW Gyal",
+            command=self.open_merge_kw,
+            bootstyle=SUCCESS
+        ).pack(pady=50, ipadx=10, ipady=10)
 
     def open_send_kw(self):
         SendKw(self)
+
+    def open_merge_kw(self):
+        ViewMerger(self)
 
 
 if __name__ == '__main__':
