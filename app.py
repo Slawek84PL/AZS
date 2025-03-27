@@ -8,6 +8,7 @@ from ttkbootstrap.dialogs import Messagebox
 from email_sender import EmailSender
 from file_manager import FileManager
 from kw_merger.view import ViewMerger
+from pdf_splitter.splitter_view import PDFSplitterView
 from pivot_manager import PivotManager
 
 
@@ -157,12 +158,21 @@ class MainApp(ttk.Window):
             bootstyle=SUCCESS
         ).pack(pady=50, ipadx=10, ipady=10)
 
+        ttk.Button(
+            self,
+            text="Podziel plik PDF",
+            command=self.open_pdf_splitter,
+            bootstyle=SUCCESS
+        ).pack(pady=50, ipadx=10, ipady=10)
+
     def open_send_kw(self):
         SendKw(self)
 
     def open_merge_kw(self):
         ViewMerger(self)
 
+    def open_pdf_splitter(self):
+        PDFSplitterView()
 
 if __name__ == '__main__':
     app = MainApp()
