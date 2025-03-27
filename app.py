@@ -8,6 +8,7 @@ from ttkbootstrap.dialogs import Messagebox
 from email_sender import EmailSender
 from file_manager import FileManager
 from kw_merger.view import ViewMerger
+from pdf_splitter.splitter_view import PDFSplitterView
 from pivot_manager import PivotManager
 
 
@@ -114,7 +115,7 @@ class SendKw(ttk.Toplevel):
 
         pivot_table_countries = PivotManager.create_pivot_table(df, pivot_index_countries, pivot_columns, pivot_values)
         if pivot_table_countries is None:
-            Messagebox.show_error("Błąd", "Prawdopodobnie próbujesz wysłać raport z niepoprawnego pliku.")
+            Messagebox.show_error("Prawdopodobnie próbujesz wysłać raport z niepoprawnego pliku.", "Błąd")
             return
 
         pivot_table_cities = PivotManager.create_pivot_table(df, pivot_index_cities, pivot_columns, pivot_values)
@@ -127,7 +128,7 @@ class SendKw(ttk.Toplevel):
         suma = PivotManager.get_suma(pivot_table_cities)
 
         if suma == 0:
-            Messagebox.show_error("Błąd", "Suma transportów jest niepoprawna. Nie wysłano maila")
+            Messagebox.show_error("Suma transportów jest niepoprawna. Nie wysłano maila", "Błąd")
             return
 
         emailTo = FileManager.get_email_receiver()
@@ -148,20 +149,30 @@ class MainApp(ttk.Window):
             text="Wyślij raport KW Gyal",
             command=self.open_send_kw,
             bootstyle=SUCCESS
-        ).pack(pady=50, ipadx=10, ipady=10)
+        ).pack(pady=10, ipadx=10, ipady=10)
 
         ttk.Button(
             self,
             text="Scal pliki KW Gyal",
             command=self.open_merge_kw,
             bootstyle=SUCCESS
-        ).pack(pady=50, ipadx=10, ipady=10)
+        ).pack(pady=10, ipadx=10, ipady=10)
+
+        ttk.Button(
+            self,
+            text="Podziel plik PDF",
+            command=self.open_pdf_splitter,
+            bootstyle=SUCCESS
+        ).pack(pady=10, ipadx=10, ipady=10)
 
     def open_send_kw(self):
         SendKw(self)
 
     def open_merge_kw(self):
         ViewMerger(self)
+
+    def open_pdf_splitter(self):
+        PDFSplitterView()
 
 
 if __name__ == '__main__':

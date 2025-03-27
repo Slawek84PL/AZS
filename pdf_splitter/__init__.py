@@ -1,0 +1,2 @@
+class PDFSplitterView:
+    pass
