@@ -22,13 +22,15 @@ class PDFSplitterView(ttk.Toplevel):
         self.preview_images = []
         self.status_var = StringVar()
 
-        self.style.configure("Treeview", font=("Arial", 15), rowheight=50)
-        self.style.configure("Treeview.Heading", font=("Arial", 14, "bold"))
+        self.style.configure("Treeview", font=("Arial", 12), rowheight=30)
+        self.style.configure("Treeview.Heading", background="#4a7abc", foreground="white", font=("Arial", 14, "bold"))
 
         self.create_config_section()
         self.create_action_buttons()
         self.create_main_layout()
         self.create_status_bar()
+
+        self.bind_all("<Control-v>", self.on_paste_clipboard)
 
     def create_config_section(self):
         config_frame = Labelframe(self, text="Konfiguracja", padding=10)
@@ -91,15 +93,13 @@ class PDFSplitterView(ttk.Toplevel):
         columns = ["barcode", "title", "pages"]
         self.group_table = Treeview(parent, columns=columns, show=HEADINGS, bootstyle="info", style="Treeview")
 
-        headers = {
-            "barcode": "Kod kreskowy",
-            "title": "Dostawca",
-            "pages": "Strony PDF"
-        }
+        self.group_table.heading("barcode", text="Nazwa pliku")
+        self.group_table.heading("title", text="Dostawca")
+        self.group_table.heading("pages", text="Strony PDF")
 
-        for col in columns:
-            self.group_table.heading(col, text=headers[col])
-            self.group_table.column(col, width=200, anchor=W)
+        self.group_table.column("barcode", width=175, anchor=W)
+        self.group_table.column("title", width=275, anchor=W)
+        self.group_table.column("pages", width=150, anchor=CENTER)
 
         self.group_table.pack(side=LEFT, fill=BOTH, expand=NO)
         self.group_table.bind("<Button-1>", self.on_table_click)
@@ -109,16 +109,16 @@ class PDFSplitterView(ttk.Toplevel):
         button_frame.pack(pady=10)
 
         (Button(button_frame, text="Dodaj wiersz", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE))
-         .pack(side=LEFT,padx=10, ipadx=10,ipady=5))
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
 
-        Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=(SUCCESS, OUTLINE)).pack(
-            side=LEFT, padx=10, ipadx=10, ipady=5)
+        (Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS).pack(
+            side=LEFT, padx=10, ipadx=10, ipady=5))
 
-        (Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=(SUCCESS, OUTLINE))
-         .pack(side=LEFT, padx=10,ipadx=10, ipady=5))
+        (Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=(SUCCESS))
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
 
         (Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=OUTLINE)
-         .pack(side=LEFT, padx=10,ipadx=10, ipady=5))
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
 
     def create_status_bar(self):
         Label(self, textvariable=self.status_var, anchor=W).pack(fill=X, side=BOTTOM, ipady=2)
@@ -154,7 +154,8 @@ class PDFSplitterView(ttk.Toplevel):
             img_tk = ImageTk.PhotoImage(img)
             self.preview_images.append(img_tk)
 
-            lbl = Label(self.inner_frame, image=img_tk, bg="red", cursor="hand2", highlightbackground="red", highlightthickness=2)
+            lbl = Label(self.inner_frame, image=img_tk, bg="red", cursor="hand2", highlightbackground="red",
+                        highlightthickness=2)
             lbl.image = img_tk
             lbl.pack(pady=5)
             lbl.bind("<Button-1>", lambda e, idx=i: self.toggle_page_selection(idx, e.widget))
@@ -180,6 +181,19 @@ class PDFSplitterView(ttk.Toplevel):
         self.pdf_path = None
         self.update_status()
 
+    def on_paste_clipboard(self, event=None):
+        try:
+            raw = self.clipboard_get()
+            rows = raw.strip().split("\n")
+            for row in rows:
+                parts = row.strip().split("\t")
+                if len(parts) >= 4:
+                    title = parts[1]
+                    barcode = parts[3]
+                    self.group_table.insert("", END, values=(barcode, title, ""))
+        except Exception as e:
+            Messagebox.show_error("Błąd wklejania", str(e))
+
     def on_table_click(self, event):
         row_id = self.group_table.identify_row(event.y)
         if row_id and self.selected_pages:
@@ -195,7 +209,7 @@ class PDFSplitterView(ttk.Toplevel):
 
     def split_pdf_action(self):
         if not self.pdf_path:
-            Messagebox.show_error( "Nie załadowano pliku PDF.", "Błąd")
+            Messagebox.show_error("Nie załadowano pliku PDF.", "Błąd")
             return
 
         output_dir = FileManager.get_config().get("pdf_output_path") or os.getcwd()
@@ -217,7 +231,7 @@ class PDFSplitterView(ttk.Toplevel):
         popup = Toplevel(self)
         popup.title("Nowy wiersz")
 
-        Label(popup, text="Kod kreskowy").grid(row=0, column=0, padx=10, pady=5, sticky=W)
+        Label(popup, text="Nazwa pliku").grid(row=0, column=0, padx=10, pady=5, sticky=W)
         barcode_entry = Entry(popup, width=40)
         barcode_entry.grid(row=0, column=1, padx=10, pady=5)
 
