@@ -21,7 +21,6 @@ class PDFSplitterView(ttk.Toplevel):
 
         self.pdf_path = None
         self.selected_pages = set()
-        self.preview_images = []
         self.status_var = StringVar()
         self.checkbox_vars = {}
 
@@ -57,17 +56,10 @@ class PDFSplitterView(ttk.Toplevel):
         button_frame = Frame(self)
         button_frame.pack(pady=10)
 
-        (Button(button_frame, text="Dodaj wiersz", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE))
-         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
-
-        (Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS).pack(
-            side=LEFT, padx=10, ipadx=10, ipady=5))
-
-        (Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=(SUCCESS))
-         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
-
-        (Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=OUTLINE)
-         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
+        Button(button_frame, text="Dodaj wiersz", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE)).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
+        Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
+        Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=SUCCESS).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
+        Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=OUTLINE).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
 
     def create_main_layout(self):
         layout_frame = Frame(self)
@@ -108,8 +100,7 @@ class PDFSplitterView(ttk.Toplevel):
         self.thumbnail_frame = Frame(self.thumb_canvas)
         self.thumb_canvas_window = self.thumb_canvas.create_window((0, 0), window=self.thumbnail_frame, anchor="nw")
 
-        self.thumbnail_frame.bind("<Configure>",
-                                  lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
+        self.thumbnail_frame.bind("<Configure>", lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
         self.thumbnail_frame.bind("<Enter>", lambda e: self.bind_mousewheel(self.thumb_canvas))
         self.thumbnail_frame.bind("<Leave>", lambda e: self.unbind_mousewheel(self.thumb_canvas))
 
@@ -126,26 +117,21 @@ class PDFSplitterView(ttk.Toplevel):
         self.preview_canvas.bind("<Enter>", lambda e: self.bind_mousewheel(self.preview_canvas))
         self.preview_canvas.bind("<Leave>", lambda e: self.unbind_mousewheel(self.preview_canvas))
 
-
     def create_status_bar(self):
         Label(self, textvariable=self.status_var, anchor=W).pack(fill=X, side=BOTTOM, ipady=2)
         self.update_status()
 
     def load_pdf_dialog(self):
         initial_path = FileManager.get_config().get("pdf_input_path", "")
-        path = filedialog.askopenfilename(
-            filetypes=[("Pliki PDF", "*.pdf")],
-            initialdir=initial_path
-        )
+        path = filedialog.askopenfilename(filetypes=[("Pliki PDF", "*.pdf")], initialdir=initial_path, parent=self)
         if path:
             self.pdf_path = path
             self.load_pdf_preview()
 
     def load_pdf_preview(self):
-        self.selected_pages.clear()
+        self.clear_thumbnails()
+        self.clear_preview()
         self.checkbox_vars = {}
-        for widget in self.thumbnail_frame.winfo_children():
-            widget.destroy()
 
         self.pdf_doc = fitz.open(self.pdf_path)
         cols = 2
@@ -176,38 +162,38 @@ class PDFSplitterView(ttk.Toplevel):
                 col = 0
                 row += 1
 
-        self.thumb_canvas.bind_all(
-            "<MouseWheel>",
-            lambda e: self.thumb_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        )
+        self.thumb_canvas.yview_moveto(0)
         self.update_status()
+
+    def clear_thumbnails(self):
+        for widget in self.thumbnail_frame.winfo_children():
+            widget.destroy()
+
+    def clear_preview(self):
+        self.preview_canvas.delete("all")
+        self.preview_canvas.config(scrollregion=(0, 0, 0, 0))
 
     def show_page_preview(self, page_index):
         if not self.pdf_doc:
             return
-
         page = self.pdf_doc.load_page(page_index)
-        pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))  # Wysoka jakość
+        pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         img_tk = ImageTk.PhotoImage(img)
 
         self.preview_canvas.delete("all")
-
-        self.preview_canvas.image = img_tk  # ważne!
-        self.right_image_id = self.preview_canvas.create_image(0, 0, anchor=NW, image=img_tk)
-
+        self.preview_canvas.image = img_tk
+        self.preview_canvas.create_image(0, 0, anchor=NW, image=img_tk)
         self.preview_canvas.config(scrollregion=(0, 0, pix.width, pix.height))
-        self.preview_canvas.bind_all(
-            "<MouseWheel>",
-            lambda e: self.preview_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
 
-    def toggle_page_selection(self, page_index, widget):
-        if page_index in self.selected_pages:
-            self.selected_pages.remove(page_index)
-            widget.config(highlightbackground="red", highlightthickness=2)
-        else:
-            self.selected_pages.add(page_index)
-            widget.config(highlightbackground="green", highlightthickness=2)
+    def clear_all(self):
+        self.selected_pages.clear()
+        self.checkbox_vars.clear()
+        self.clear_thumbnails()
+        self.clear_preview()
+        for row in self.group_table.get_children():
+            self.group_table.delete(row)
+        self.pdf_path = None
         self.update_status()
 
     def on_paste_clipboard(self, event=None):
@@ -221,32 +207,27 @@ class PDFSplitterView(ttk.Toplevel):
                     barcode = parts[3]
                     self.group_table.insert("", END, values=(barcode, title, ""))
         except Exception as e:
-            Messagebox.show_error("Błąd wklejania", str(e))
+            Messagebox.show_error("Błąd wklejania", str(e), parent=self)
 
     def on_table_click(self, event):
         row_id = self.group_table.identify_row(event.y)
         if row_id:
             selected = [i for i, var in self.checkbox_vars.items() if var.get()]
-
             if selected:
                 current = self.group_table.set(row_id, "pages")
-                new_values = ",".join(str(p + 1) for p in sorted(selected))  # +1 dla ludzkiej numeracji
+                new_values = ",".join(str(p + 1) for p in sorted(selected))
                 new_value = current + ("," if current and new_values else "") + new_values
-
                 self.group_table.set(row_id, "pages", new_value)
-
                 for i in selected:
                     self.checkbox_vars[i].set(False)
-
                 self.update_status()
 
     def split_pdf_action(self):
         if not self.pdf_path:
-            Messagebox.show_error("Nie załadowano pliku PDF.", "Błąd")
+            Messagebox.show_error("Nie załadowano pliku PDF.", "Błąd", parent=self)
             return
 
         output_dir = FileManager.get_config().get("pdf_output_path") or os.getcwd()
-
         row_data = [
             (self.group_table.set(row_id, "barcode"), self.group_table.set(row_id, "pages"))
             for row_id in self.group_table.get_children()
@@ -254,9 +235,9 @@ class PDFSplitterView(ttk.Toplevel):
 
         success, error = PDFGenerator.generate_splits(self.pdf_path, row_data, output_dir)
         if success:
-            Messagebox.show_info("Pliki PDF zostały zapisane.", "Sukces")
+            Messagebox.show_info("Pliki PDF zostały zapisane.", "Sukces", parent=self)
         else:
-            Messagebox.show_error(error, "Błąd")
+            Messagebox.show_error(error, "Błąd", parent=self)
 
     def add_row_popup(self):
         from tkinter import Toplevel, Entry
@@ -283,36 +264,26 @@ class PDFSplitterView(ttk.Toplevel):
         Button(popup, text="Dodaj", command=add_row, bootstyle=SUCCESS).grid(row=3, column=1, pady=10)
 
     def change_input_path(self):
-        path = filedialog.askdirectory()
+        path = filedialog.askdirectory(parent=self)
         if path:
             FileManager.set_config("pdf_input_path", path)
             self.input_path_lbl.config(text=path)
 
     def change_output_path(self):
-        path = filedialog.askdirectory()
+        path = filedialog.askdirectory(parent=self)
         if path:
             FileManager.set_config("pdf_output_path", path)
             self.output_path_lbl.config(text=path)
 
     def update_status(self):
-        if not self.selected_pages:
+        selected = [i + 1 for i, var in self.checkbox_vars.items() if var.get()]
+        if not selected:
             self.status_var.set("Brak zaznaczonych stron")
         else:
-            pages = ", ".join(str(p + 1) for p in sorted(self.selected_pages))
-            self.status_var.set(f"Zaznaczone strony: {pages}")
-
-    def clear_all(self):
-        self.selected_pages.clear()
-        self.preview_images.clear()
-        for widget in self.inner_frame.winfo_children():
-            widget.destroy()
-        for row in self.group_table.get_children():
-            self.group_table.delete(row)
-        self.pdf_path = None
-        self.update_status()
+            self.status_var.set(f"Zaznaczone strony: {', '.join(map(str, selected))}")
 
     def bind_mousewheel(self, widget):
-        self.unbind_mousewheel()  # uniknij konfliktu
+        self.unbind_mousewheel()
         self.bind_all("<MouseWheel>", lambda e: widget.yview_scroll(int(-1 * (e.delta / 120)), "units"))
 
     def unbind_mousewheel(self, *_):
