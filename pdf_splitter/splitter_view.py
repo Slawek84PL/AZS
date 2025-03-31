@@ -95,8 +95,23 @@ class PDFSplitterView(ttk.Toplevel):
         preview_frame = Frame(parent)
         preview_frame.pack(fill=BOTH, expand=YES)
 
-        self.thumbnail_frame = Frame(preview_frame)
-        self.thumbnail_frame.pack(side=LEFT, fill=Y, padx=10)
+        left_frame = Frame(preview_frame)
+        left_frame.pack(side=LEFT, fill=Y)
+
+        self.thumb_canvas = Canvas(left_frame, bg="white", width=400)
+        self.thumb_scrollbar = Scrollbar(left_frame, orient="vertical", command=self.thumb_canvas.yview)
+        self.thumb_canvas.configure(yscrollcommand=self.thumb_scrollbar.set)
+
+        self.thumb_canvas.pack(side=LEFT, fill=Y, expand=YES)
+        self.thumb_scrollbar.pack(side=RIGHT, fill=Y)
+
+        self.thumbnail_frame = Frame(self.thumb_canvas)
+        self.thumb_canvas_window = self.thumb_canvas.create_window((0, 0), window=self.thumbnail_frame, anchor="nw")
+
+        self.thumbnail_frame.bind("<Configure>",
+                                  lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
+        self.thumbnail_frame.bind("<Enter>", lambda e: self.bind_mousewheel(self.thumb_canvas))
+        self.thumbnail_frame.bind("<Leave>", lambda e: self.unbind_mousewheel(self.thumb_canvas))
 
         right_preview_frame = Frame(preview_frame)
         right_preview_frame.pack(side=LEFT, fill=BOTH, expand=YES)
@@ -108,8 +123,8 @@ class PDFSplitterView(ttk.Toplevel):
         self.preview_canvas.pack(side=LEFT, fill=BOTH, expand=YES)
         self.scrollbar.pack(side=RIGHT, fill=Y)
 
-        self.right_image_id = None
-
+        self.preview_canvas.bind("<Enter>", lambda e: self.bind_mousewheel(self.preview_canvas))
+        self.preview_canvas.bind("<Leave>", lambda e: self.unbind_mousewheel(self.preview_canvas))
 
 
     def create_status_bar(self):
@@ -139,7 +154,7 @@ class PDFSplitterView(ttk.Toplevel):
         for i, page in enumerate(self.pdf_doc):
             pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            img.thumbnail((150, 200))
+            img.thumbnail((200, 250))
             img_tk = ImageTk.PhotoImage(img)
 
             var = ttk.BooleanVar()
@@ -160,7 +175,11 @@ class PDFSplitterView(ttk.Toplevel):
             if col >= cols:
                 col = 0
                 row += 1
-        self.preview_canvas[0].bind_all("<MouseWheel>", self._on_mousewheel)
+
+        self.thumb_canvas.bind_all(
+            "<MouseWheel>",
+            lambda e: self.thumb_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        )
         self.update_status()
 
     def show_page_preview(self, page_index):
@@ -178,6 +197,9 @@ class PDFSplitterView(ttk.Toplevel):
         self.right_image_id = self.preview_canvas.create_image(0, 0, anchor=NW, image=img_tk)
 
         self.preview_canvas.config(scrollregion=(0, 0, pix.width, pix.height))
+        self.preview_canvas.bind_all(
+            "<MouseWheel>",
+            lambda e: self.preview_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
 
     def toggle_page_selection(self, page_index, widget):
         if page_index in self.selected_pages:
@@ -289,5 +311,9 @@ class PDFSplitterView(ttk.Toplevel):
         self.pdf_path = None
         self.update_status()
 
-    def _on_mousewheel(self, event):
-        self.preview_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    def bind_mousewheel(self, widget):
+        self.unbind_mousewheel()  # uniknij konfliktu
+        self.bind_all("<MouseWheel>", lambda e: widget.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+
+    def unbind_mousewheel(self, *_):
+        self.unbind_all("<MouseWheel>")
