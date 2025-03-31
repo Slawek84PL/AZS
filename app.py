@@ -141,22 +141,22 @@ class SendKw(ttk.Toplevel):
 
 class MainApp(ttk.Window):
     def __init__(self):
-        super().__init__("Automatyzacje", "journal")
+        super().__init__("Automatyzacje", "cyborg")
         self.geometry("400x400")
 
-        ttk.Button(
-            self,
-            text="Wyślij raport KW Gyal",
-            command=self.open_send_kw,
-            bootstyle=SUCCESS
-        ).pack(pady=10, ipadx=10, ipady=10)
-
-        ttk.Button(
-            self,
-            text="Scal pliki KW Gyal",
-            command=self.open_merge_kw,
-            bootstyle=SUCCESS
-        ).pack(pady=10, ipadx=10, ipady=10)
+        # ttk.Button(
+        #     self,
+        #     text="Wyślij raport KW Gyal",
+        #     command=self.open_send_kw,
+        #     bootstyle=SUCCESS
+        # ).pack(pady=10, ipadx=10, ipady=10)
+        #
+        # ttk.Button(
+        #     self,
+        #     text="Scal pliki KW Gyal",
+        #     command=self.open_merge_kw,
+        #     bootstyle=SUCCESS
+        # ).pack(pady=10, ipadx=10, ipady=10)
 
         ttk.Button(
             self,
