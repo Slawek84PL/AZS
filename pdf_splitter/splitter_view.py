@@ -1,4 +1,6 @@
 import os
+from tkinter.ttk import Checkbutton
+
 import fitz
 from tkinter import filedialog, StringVar, Label
 from ttkbootstrap import Frame, Button, Labelframe, Treeview, Scrollbar, Canvas
@@ -21,6 +23,7 @@ class PDFSplitterView(ttk.Toplevel):
         self.selected_pages = set()
         self.preview_images = []
         self.status_var = StringVar()
+        self.checkbox_vars = {}
 
         self.style.configure("Treeview", font=("Arial", 12), rowheight=30)
         self.style.configure("Treeview.Heading", background="#4a7abc", foreground="white", font=("Arial", 14, "bold"))
@@ -70,21 +73,26 @@ class PDFSplitterView(ttk.Toplevel):
         self.create_preview_section(layout_frame)
 
     def create_preview_section(self, parent):
+        # 🔲 Główna ramka podglądu
         preview_frame = Frame(parent)
-        preview_frame.pack(side=RIGHT, fill=Y)
+        preview_frame.pack(fill=BOTH, expand=YES)
 
-        self.preview_canvas = Canvas(preview_frame, width=1200, bg="grey")
-        self.preview_canvas.pack(side=LEFT, fill=Y, expand=YES)
+        # 🔲 Lewa kolumna – miniatury PDF (w grid)
+        self.thumbnail_frame = Frame(preview_frame)
+        self.thumbnail_frame.pack(side=LEFT, fill=Y, padx=10)
 
-        self.scrollbar = Scrollbar(preview_frame, orient=VERTICAL, command=self.preview_canvas.yview)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        # 🔲 Prawa kolumna – duży podgląd strony
+        right_preview_frame = Frame(preview_frame)
+        right_preview_frame.pack(side=LEFT, fill=BOTH, expand=YES)
+
+        self.preview_canvas = Canvas(right_preview_frame, bg="white")
+        self.scrollbar = Scrollbar(right_preview_frame, orient="vertical", command=self.preview_canvas.yview)
         self.preview_canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        self.inner_frame = Frame(self.preview_canvas)
-        self.inner_frame.bind("<Configure>",
-                              lambda e: self.preview_canvas.configure(scrollregion=self.preview_canvas.bbox("all")))
-        self.preview_canvas.create_window((0, 0), window=self.inner_frame, anchor="w")
-        self.preview_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.preview_canvas.pack(side=LEFT, fill=BOTH, expand=YES)
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+
+        self.right_image_id = None  # do aktualizacji obrazu
 
     def _on_mousewheel(self, event):
         self.preview_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -142,25 +150,60 @@ class PDFSplitterView(ttk.Toplevel):
             self.load_pdf_preview()
 
     def load_pdf_preview(self):
-        self.preview_images.clear()
         self.selected_pages.clear()
-        for widget in self.inner_frame.winfo_children():
+        self.checkbox_vars = {}
+        for widget in self.thumbnail_frame.winfo_children():
             widget.destroy()
 
-        doc = fitz.open(self.pdf_path)
-        for i, page in enumerate(doc):
-            pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            img_tk = ImageTk.PhotoImage(img)
-            self.preview_images.append(img_tk)
+        self.pdf_doc = fitz.open(self.pdf_path)
+        cols = 2
+        row, col = 0, 0
 
-            lbl = Label(self.inner_frame, image=img_tk, bg="red", cursor="hand2", highlightbackground="red",
-                        highlightthickness=2)
+        for i, page in enumerate(self.pdf_doc):
+            pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            img.thumbnail((180, 250))
+            img_tk = ImageTk.PhotoImage(img)
+
+            var = ttk.BooleanVar()
+            self.checkbox_vars[i] = var
+
+            frame = Frame(self.thumbnail_frame, padding=5)
+            frame.grid(row=row, column=col, padx=5, pady=5)
+
+            lbl = Label(frame, image=img_tk, bg="white", cursor="hand2")
             lbl.image = img_tk
-            lbl.pack(pady=5)
-            lbl.bind("<Button-1>", lambda e, idx=i: self.toggle_page_selection(idx, e.widget))
+            lbl.pack()
+            lbl.bind("<Button-1>", lambda e, idx=i: self.show_page_preview(idx))
+
+            chk = Checkbutton(frame, variable=var, text=f"{i + 1}")
+            chk.pack()
+
+            col += 1
+            if col >= cols:
+                col = 0
+                row += 1
 
         self.update_status()
+
+    def show_page_preview(self, page_index):
+        if not self.pdf_doc:
+            return
+
+        page = self.pdf_doc.load_page(page_index)
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # Wysoka jakość
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        img_tk = ImageTk.PhotoImage(img)
+
+        # 🔄 Wyczyść stary obraz
+        self.preview_canvas.delete("all")
+
+        # 🖼️ Wstaw nowy obraz
+        self.preview_canvas.image = img_tk  # ważne!
+        self.right_image_id = self.preview_canvas.create_image(0, 0, anchor=NW, image=img_tk)
+
+        # 📏 Ustaw scroll i rozmiar obszaru
+        self.preview_canvas.config(scrollregion=(0, 0, pix.width, pix.height))
 
     def toggle_page_selection(self, page_index, widget):
         if page_index in self.selected_pages:
@@ -196,16 +239,23 @@ class PDFSplitterView(ttk.Toplevel):
 
     def on_table_click(self, event):
         row_id = self.group_table.identify_row(event.y)
-        if row_id and self.selected_pages:
-            current = self.group_table.set(row_id, "pages")
-            new_pages = sorted(self.selected_pages)
-            new_values = ",".join(str(p + 1) for p in new_pages)
-            new_value = current + ("," if current and new_values else "") + new_values
-            self.group_table.set(row_id, "pages", new_value)
-            self.selected_pages.clear()
-            for widget in self.inner_frame.winfo_children():
-                widget.config(highlightbackground="red", highlightthickness=2)
-            self.update_status()
+        if row_id:
+            # ⬇️ Pobierz listę stron zaznaczonych checkboxami
+            selected = [i for i, var in self.checkbox_vars.items() if var.get()]
+
+            if selected:
+                current = self.group_table.set(row_id, "pages")
+                new_values = ",".join(str(p + 1) for p in sorted(selected))  # +1 dla ludzkiej numeracji
+                new_value = current + ("," if current and new_values else "") + new_values
+
+                # 📝 Ustaw nowe wartości
+                self.group_table.set(row_id, "pages", new_value)
+
+                # ♻️ Wyczyść zaznaczenia checkboxów
+                for i in selected:
+                    self.checkbox_vars[i].set(False)
+
+                self.update_status()
 
     def split_pdf_action(self):
         if not self.pdf_path:
