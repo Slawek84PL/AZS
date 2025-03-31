@@ -2,6 +2,8 @@ import os
 
 import fitz
 
+from file_manager import FileManager
+
 
 class PDFGenerator:
 
@@ -9,6 +11,9 @@ class PDFGenerator:
     def generate_splits(original_pdf_path, row_data, output_folder):
         try:
             doc = fitz.open(original_pdf_path)
+            files_saved = 0
+            pages_saved = 0
+
             for barcode, pages_str in row_data:
                 if not barcode or not pages_str:
                     continue
@@ -24,6 +29,16 @@ class PDFGenerator:
 
                 out_path = os.path.join(output_folder, f"{barcode}.pdf")
                 new_doc.save(out_path)
+
+                files_saved += 1
+                pages_saved += len(pages)
+
+                config = FileManager.get_config()
+                prev_files = int(config.get("split_files_count", 0))
+                prev_pages = int(config.get("split_pages_count", 0))
+
+                FileManager.set_config("split_files_count", str(prev_files + files_saved))
+                FileManager.set_config("split_pages_count", str(prev_pages + pages_saved))
 
             return True, None
         except Exception as e:
