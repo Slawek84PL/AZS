@@ -4,7 +4,6 @@ from tkinter.ttk import Checkbutton
 
 import fitz
 import ttkbootstrap as ttk
-from PIL import Image, ImageTk
 from ttkbootstrap import Frame, Button, Labelframe, Treeview, Scrollbar, Canvas
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
@@ -56,20 +55,18 @@ class PDFSplitterView(ttk.Toplevel):
         button_frame = Frame(self)
         button_frame.pack(pady=10)
 
-        Button(button_frame, text="Wklej dane ze schowka", command=self.on_paste_clipboard, bootstyle=SECONDARY).pack(
-            side=LEFT, padx=10, ipadx=10, ipady=5)
-        Button(button_frame, text="Dodaj wiersz", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE)).pack(
-            side=LEFT, padx=10, ipadx=10, ipady=5)
-        Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS).pack(side=LEFT,
-                                                                                                             padx=10,
-                                                                                                             ipadx=10,
-                                                                                                             ipady=5)
-        Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=SUCCESS).pack(side=LEFT,
-                                                                                                       padx=10,
-                                                                                                       ipadx=10,
-                                                                                                       ipady=5)
-        Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=OUTLINE).pack(side=LEFT, padx=10,
-                                                                                             ipadx=10, ipady=5)
+        (Button(button_frame, text="Edytuj strony", command=self.edit_pages, bootstyle=INFO)
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
+        (Button(button_frame, text="Wklej dane ze schowka", command=self.on_paste_clipboard, bootstyle=SECONDARY)
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
+        (Button(button_frame, text=f"Dodaj wiersz {u"\U0001F600"}", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE))
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
+        (Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS)
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
+        (Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=SUCCESS)
+         .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
+        (Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=DANGER)
+         .pack(side=RIGHT, padx=10, ipadx=10, ipady=5))
 
     def create_main_layout(self):
         layout_frame = Frame(self)
@@ -93,6 +90,51 @@ class PDFSplitterView(ttk.Toplevel):
         self.group_table.pack(side=LEFT, fill=BOTH, expand=NO)
         self.group_table.bind("<Button-1>", self.on_table_click)
 
+    def edit_pages(self):
+        from tkinter import Toplevel, Entry
+        preview = Toplevel(self)
+        preview.state("zoomed")
+        preview.title("Podgląd i edycja")
+
+        canvas = Canvas(preview, bg="white")
+        scrollbar = Scrollbar(preview, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=LEFT, fill=BOTH, expand=YES)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        scrollable_frame = Frame(canvas)
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        scrollable_frame.bind("<Enter>", lambda e: self.bind_mousewheel(scrollable_frame))
+        scrollable_frame.bind("<Leave>", lambda e: self.unbind_mousewheel(scrollable_frame))
+
+        my_row = self.group_table.selection()
+        page_numbers = self.group_table.item(my_row, "values")[2].split(",")
+
+        row, col = 0, 0
+
+        self.pdf_doc = fitz.open(self.pdf_path)
+        for page_index in page_numbers:
+            print(page_index)
+            page = self.pdf_doc.load_page(int(page_index) - 1)
+
+            frame = Frame(scrollable_frame, padding=2)
+            frame.grid(row=row, column=col, padx=2, pady=2)
+
+            lbl = Label(frame, image=img_tk, bg="white", cursor="hand2")
+            lbl.image = img_tk
+            lbl.pack()
+
+            Button(frame, text="Usuń", bootstyle=DANGER).pack(pady=5)
+
+            col += 1
+            if col >= cols:
+                col = 0
+                row += 1
+
+
     def create_preview_section(self, parent):
         preview_frame = Frame(parent)
         preview_frame.pack(fill=BOTH, expand=YES)
@@ -112,8 +154,8 @@ class PDFSplitterView(ttk.Toplevel):
 
         self.thumbnail_frame.bind("<Configure>",
                                   lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
-        self.thumbnail_frame.bind("<Enter>", lambda e: self.bind_mousewheel(self.thumb_canvas))
-        self.thumbnail_frame.bind("<Leave>", lambda e: self.unbind_mousewheel(self.thumb_canvas))
+        self.thumb_canvas.bind("<Enter>", lambda e: self.bind_mousewheel(self.thumb_canvas))
+        self.thumb_canvas.bind("<Leave>", lambda e: self.unbind_mousewheel(self.thumb_canvas))
 
         right_preview_frame = Frame(preview_frame)
         right_preview_frame.pack(side=LEFT, fill=BOTH, expand=YES)
@@ -149,10 +191,7 @@ class PDFSplitterView(ttk.Toplevel):
         row, col = 0, 0
 
         for i, page in enumerate(self.pdf_doc):
-            pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            img.thumbnail((200, 250))
-            img_tk = ImageTk.PhotoImage(img)
+            img_tk = helper.build_image_from_page(page, 200, 250, 0.5)
 
             var = ttk.BooleanVar()
             self.checkbox_vars[i] = var
@@ -188,14 +227,12 @@ class PDFSplitterView(ttk.Toplevel):
         if not self.pdf_doc:
             return
         page = self.pdf_doc.load_page(page_index)
-        pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        img_tk = ImageTk.PhotoImage(img)
+        img_tk = helper.build_image_from_page(page, 900, 1050, 1.5)
 
         self.preview_canvas.delete("all")
         self.preview_canvas.image = img_tk
         self.preview_canvas.create_image(0, 0, anchor=NW, image=img_tk)
-        self.preview_canvas.config(scrollregion=(0, 0, pix.width, pix.height))
+        self.preview_canvas.config(scrollregion=(0, 0, 1000, 1050))
 
     def clear_all(self):
         self.selected_pages.clear()
