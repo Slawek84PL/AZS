@@ -1,6 +1,7 @@
 import os
 from tkinter import filedialog, StringVar, Label
 from tkinter.ttk import Checkbutton
+import pdf_splitter.splitter_helper as helper
 
 import fitz
 import ttkbootstrap as ttk
@@ -113,12 +114,14 @@ class PDFSplitterView(ttk.Toplevel):
         my_row = self.group_table.selection()
         page_numbers = self.group_table.item(my_row, "values")[2].split(",")
 
+        cols, x, y = helper.get_resolution(len(page_numbers))
         row, col = 0, 0
 
         self.pdf_doc = fitz.open(self.pdf_path)
         for page_index in page_numbers:
             print(page_index)
             page = self.pdf_doc.load_page(int(page_index) - 1)
+            img_tk = helper.build_image_from_page(page, x, y, 1)
 
             frame = Frame(scrollable_frame, padding=2)
             frame.grid(row=row, column=col, padx=2, pady=2)
