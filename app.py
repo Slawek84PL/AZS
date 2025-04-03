@@ -141,22 +141,22 @@ class SendKw(ttk.Toplevel):
 
 class MainApp(ttk.Window):
     def __init__(self):
-        super().__init__("Automatyzacje", "journal")
+        super().__init__("Automatyzacje", "cyborg")
         self.geometry("400x400")
 
-        ttk.Button(
-            self,
-            text="Wyślij raport KW Gyal",
-            command=self.open_send_kw,
-            bootstyle=SUCCESS
-        ).pack(pady=10, ipadx=10, ipady=10)
-
-        ttk.Button(
-            self,
-            text="Scal pliki KW Gyal",
-            command=self.open_merge_kw,
-            bootstyle=SUCCESS
-        ).pack(pady=10, ipadx=10, ipady=10)
+        # ttk.Button(
+        #     self,
+        #     text="Wyślij raport KW Gyal",
+        #     command=self.open_send_kw,
+        #     bootstyle=SUCCESS
+        # ).pack(pady=10, ipadx=10, ipady=10)
+        #
+        # ttk.Button(
+        #     self,
+        #     text="Scal pliki KW Gyal",
+        #     command=self.open_merge_kw,
+        #     bootstyle=SUCCESS
+        # ).pack(pady=10, ipadx=10, ipady=10)
 
         ttk.Button(
             self,
@@ -164,6 +164,27 @@ class MainApp(ttk.Window):
             command=self.open_pdf_splitter,
             bootstyle=SUCCESS
         ).pack(pady=10, ipadx=10, ipady=10)
+
+        self.stats_label = ttk.Label(self, text="", anchor=CENTER, font=("Arial", 11))
+        self.stats_label.pack(pady=20)
+
+        self.update_stats_label()
+
+    def update_stats_label(self):
+        config = FileManager.get_config()
+        files = config.get("split_files_count", "0")
+        pages = config.get("split_pages_count", "0")
+        self.stats_label.config(text=f"Podzielone pliki: {files}\nZapisane strony: {pages}")
+
+    def open_send_kw(self):
+        SendKw(self)
+
+    def open_merge_kw(self):
+        ViewMerger(self)
+
+    def open_pdf_splitter(self):
+        PDFSplitterView()
+        self.update_stats_label()
 
     def open_send_kw(self):
         SendKw(self)
