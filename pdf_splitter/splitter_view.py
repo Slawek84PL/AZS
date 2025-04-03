@@ -1,13 +1,13 @@
 import os
+from tkinter import filedialog, StringVar, Label
 from tkinter.ttk import Checkbutton
 
 import fitz
-from tkinter import filedialog, StringVar, Label
+import ttkbootstrap as ttk
+from PIL import Image, ImageTk
 from ttkbootstrap import Frame, Button, Labelframe, Treeview, Scrollbar, Canvas
 from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
-import ttkbootstrap as ttk
-from PIL import Image, ImageTk
 
 from file_manager import FileManager
 from pdf_splitter.splitt_pdf import PDFGenerator
@@ -56,10 +56,20 @@ class PDFSplitterView(ttk.Toplevel):
         button_frame = Frame(self)
         button_frame.pack(pady=10)
 
-        Button(button_frame, text="Dodaj wiersz", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE)).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
-        Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
-        Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=SUCCESS).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
-        Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=OUTLINE).pack(side=LEFT, padx=10, ipadx=10, ipady=5)
+        Button(button_frame, text="Wklej dane ze schowka", command=self.on_paste_clipboard, bootstyle=SECONDARY).pack(
+            side=LEFT, padx=10, ipadx=10, ipady=5)
+        Button(button_frame, text="Dodaj wiersz", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE)).pack(
+            side=LEFT, padx=10, ipadx=10, ipady=5)
+        Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS).pack(side=LEFT,
+                                                                                                             padx=10,
+                                                                                                             ipadx=10,
+                                                                                                             ipady=5)
+        Button(button_frame, text="Wczytaj PDF", command=self.load_pdf_dialog, bootstyle=SUCCESS).pack(side=LEFT,
+                                                                                                       padx=10,
+                                                                                                       ipadx=10,
+                                                                                                       ipady=5)
+        Button(button_frame, text="Wyczyść", command=self.clear_all, bootstyle=OUTLINE).pack(side=LEFT, padx=10,
+                                                                                             ipadx=10, ipady=5)
 
     def create_main_layout(self):
         layout_frame = Frame(self)
@@ -100,7 +110,8 @@ class PDFSplitterView(ttk.Toplevel):
         self.thumbnail_frame = Frame(self.thumb_canvas)
         self.thumb_canvas_window = self.thumb_canvas.create_window((0, 0), window=self.thumbnail_frame, anchor="nw")
 
-        self.thumbnail_frame.bind("<Configure>", lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
+        self.thumbnail_frame.bind("<Configure>",
+                                  lambda e: self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all")))
         self.thumbnail_frame.bind("<Enter>", lambda e: self.bind_mousewheel(self.thumb_canvas))
         self.thumbnail_frame.bind("<Leave>", lambda e: self.unbind_mousewheel(self.thumb_canvas))
 
