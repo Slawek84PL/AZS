@@ -17,7 +17,7 @@ class PDFSplitterView(ttk.Toplevel):
     def __init__(self):
         super().__init__()
         self.title("Dzielenie plików PDF")
-        self.geometry("1600x1200")
+        self.state("zoomed")
 
         self.pdf_path = None
         self.selected_pages = set()
@@ -60,7 +60,8 @@ class PDFSplitterView(ttk.Toplevel):
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
         (Button(button_frame, text="Wklej dane ze schowka", command=self.on_paste_clipboard, bootstyle=SECONDARY)
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
-        (Button(button_frame, text=f"Dodaj wiersz {u"\U0001F600"}", command=self.add_row_popup, bootstyle=(SUCCESS, OUTLINE))
+        (Button(button_frame, text=f"Dodaj wiersz {u"\U0001F600"}", command=self.add_row_popup,
+                bootstyle=(SUCCESS, OUTLINE))
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
         (Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS)
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
@@ -111,14 +112,14 @@ class PDFSplitterView(ttk.Toplevel):
         scrollable_frame.bind("<Enter>", lambda e: self.bind_mousewheel(scrollable_frame))
         scrollable_frame.bind("<Leave>", lambda e: self.unbind_mousewheel(scrollable_frame))
 
-        my_row = self.group_table.selection()
-        page_numbers = self.group_table.item(my_row, "values")[2].split(",")
+        self.active_row = self.group_table.selection()
+        self.page_numbers = self.group_table.item(self.active_row, "values")[2].split(",")
 
-        cols, x, y = helper.get_resolution(len(page_numbers))
+        cols, x, y = helper.get_resolution(len(self.page_numbers))
         row, col = 0, 0
 
         self.pdf_doc = fitz.open(self.pdf_path)
-        for page_index in page_numbers:
+        for page_index in self.page_numbers:
             print(page_index)
             page = self.pdf_doc.load_page(int(page_index) - 1)
             img_tk = helper.build_image_from_page(page, x, y, 1)
@@ -130,13 +131,25 @@ class PDFSplitterView(ttk.Toplevel):
             lbl.image = img_tk
             lbl.pack()
 
-            Button(frame, text="Usuń", bootstyle=DANGER).pack(pady=5)
+            Button(frame, text="Usuń", command=lambda f=frame, p=page_index: self.delete_page(f, p),
+                   bootstyle=DANGER).pack(pady=5)
 
             col += 1
             if col >= cols:
                 col = 0
                 row += 1
 
+    def delete_page(self, frame, page_index):
+        frame.destroy()
+        if page_index in self.page_numbers:
+            self.page_numbers.remove(page_index)
+        self._update_pages()
+
+    def _update_pages(self):
+        if self.active_row:
+            row_id = self.active_row[0]
+            new_value = ",".join(self.page_numbers)
+            self.group_table.set(row_id, "pages", new_value)
 
     def create_preview_section(self, parent):
         preview_frame = Frame(parent)
