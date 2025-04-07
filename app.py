@@ -158,15 +158,17 @@ class MainApp(ttk.Window):
         #     bootstyle=SUCCESS
         # ).pack(pady=10, ipadx=10, ipady=10)
 
+        self.stats_label = ttk.Label(self, text="", anchor=CENTER, font=("Arial", 11))
+        self.stats_label.pack(pady=20)
+
         ttk.Button(
             self,
             text="Podziel plik PDF",
             command=self.open_pdf_splitter,
             bootstyle=SUCCESS
-        ).pack(pady=10, ipadx=10, ipady=10)
+        ).pack(pady=20, ipadx=10, ipady=10)
 
-        self.stats_label = ttk.Label(self, text="", anchor=CENTER, font=("Arial", 11))
-        self.stats_label.pack(pady=20)
+
 
         self.update_stats_label()
 
@@ -174,7 +176,8 @@ class MainApp(ttk.Window):
         config = FileManager.get_config()
         files = config.get("split_files_count", "0")
         pages = config.get("split_pages_count", "0")
-        self.stats_label.config(text=f"Podzielone pliki: {files}\nZapisane strony: {pages}")
+        stickers = config.get("saved_stickers_count", "0")
+        self.stats_label.config(text=f"Podzielone pliki: {files}\nNie wydrukowano {pages} stron i {stickers} naklejek")
 
     def open_send_kw(self):
         SendKw(self)
