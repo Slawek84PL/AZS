@@ -35,11 +35,11 @@ class PDFGenerator:
             config = FileManager.get_config()
             prev_files = int(config.get("split_files_count", 0))
             prev_pages = int(config.get("split_pages_count", 0))
-            prev_stickers = int(config.get("stickers_saved", 0))
+            prev_stickers = int(config.get("saved_stickers_count", 0))
 
             FileManager.set_config("split_files_count", str(prev_files + files_saved))
             FileManager.set_config("split_pages_count", str(prev_pages + pages_saved))
-            FileManager.set_config("saved_stickers", str(prev_stickers + stickers_saved))
+            FileManager.set_config("saved_stickers_count", str(prev_stickers + stickers_saved))
 
             return True, None
         except Exception as e:

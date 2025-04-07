@@ -176,7 +176,7 @@ class MainApp(ttk.Window):
         config = FileManager.get_config()
         files = config.get("split_files_count", "0")
         pages = config.get("split_pages_count", "0")
-        stickers = config.get("stickers_saved", "0")
+        stickers = config.get("saved_stickers_count", "0")
         self.stats_label.config(text=f"Podzielone pliki: {files}\nNie wydrukowano {pages} stron i {stickers} naklejek")
 
     def open_send_kw(self):

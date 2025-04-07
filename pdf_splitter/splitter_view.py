@@ -15,6 +15,7 @@ from pdf_splitter.splitt_pdf import PDFGenerator
 class PDFSplitterView(ttk.Toplevel):
     def __init__(self):
         super().__init__()
+        self.iconbitmap(os.path.join(os.path.dirname(__file__), "jas_pdf.ico"))
         self.title("Dzielenie plików PDF")
         self.state("zoomed")
 
@@ -58,7 +59,7 @@ class PDFSplitterView(ttk.Toplevel):
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
         (Button(button_frame, text="Wklej dane ze schowka", command=self.on_paste_clipboard, bootstyle=SECONDARY)
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
-        (Button(button_frame, text=f"Dodaj wiersz {u"\U0001F600"}", command=self.add_row_popup,
+        (Button(button_frame, text=f"Dodaj wiersz", command=self.add_row_popup,
                 bootstyle=(SUCCESS, OUTLINE))
          .pack(side=LEFT, padx=10, ipadx=10, ipady=5))
         (Button(button_frame, text="Podziel i zapisz", command=self.split_pdf_action, bootstyle=SUCCESS)
