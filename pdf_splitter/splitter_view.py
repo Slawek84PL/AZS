@@ -15,7 +15,7 @@ from pdf_splitter.splitt_pdf import PDFGenerator
 class PDFSplitterView(ttk.Toplevel):
     def __init__(self):
         super().__init__()
-        self.iconbitmap(os.path.join(os.path.dirname(__file__), "jas_pdf.ico"))
+        # self.iconbitmap(os.path.join(os.path.dirname(__file__), "jas_pdf.ico"))
         self.title("Dzielenie plików PDF")
         self.state("zoomed")
 
