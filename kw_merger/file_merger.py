@@ -81,8 +81,9 @@ class FileMerger():
                     .sum()
                 )
 
+                column_quantity = "Raklapok \\nszáma"
                 additional_text = " ".join(
-                    f"{row['Infó']}({row['Raklapok \nszáma']}pal)"
+                    f"{row['Infó']}({row[column_quantity]}pal)"
                     for _, row in grouped_additional.iterrows()
                 )
             else:
